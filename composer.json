@@ -1,0 +1,10 @@
+{
+    "require": {
+        "acmephp/acmephp": "^2.1",
+        "acmephp/core": "^2.1",
+        "digitalsign/ssl": "^1.1",
+        "quantumca/acmephp-core": "^2.0",
+        "infinityfree/acmecore": "^3.1",
+        "mbyte/acmephp": "^1.0"
+    }
+}
