@@ -15,7 +15,7 @@ $domainsInput = trim($_POST['domains'] ?? '');
 $email        = trim($_POST['email'] ?? '');
 $webroot      = trim($_POST['webroot'] ?? '');
 // Определяем, использовать staging или production сервер Let's Encrypt
-$isStaging    = isset($_POST['staging']);
+$isStaging    = false;
 
 if ($domainsInput === '' || $email === '' || $webroot === '') {
     die('Все поля обязательны для заполнения.');
@@ -282,66 +282,39 @@ try {
     // Сохраняем сертификат
     $certificate = $certificateResponse->getCertificate();
     
+    // Получаем сертификат домена
+    $certPem = $certificate->getPEM();
+    
     // Сохраняем сертификат домена
     file_put_contents(
         $certDestDir . '/cert.pem',
-        $certificate->getPEM()
+        $certPem
     );
     
-    // Получаем цепочку сертификатов
-    // В AcmePHP цепочка уже включена в ответ
-    $certPem = $certificate->getPEM();
-    
-    // Разделяем основной сертификат и цепочку
-    $pattern = '/(-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----)/s';
-    preg_match_all($pattern, $certPem, $matches);
-    
-    $certParts = $matches[0];
-    
-    if (count($certParts) > 0) {
-        // Первый сертификат - это сертификат домена
-        $domainCert = $certParts[0];
-        
-        // Остальные сертификаты - это цепочка
-        $issuerChain = '';
-        for ($i = 1; $i < count($certParts); $i++) {
-            $issuerChain .= $certParts[$i] . "\n";
-        }
-        
-        // Сохраняем цепочку
-        file_put_contents(
-            $certDestDir . '/chain.pem',
-            $issuerChain
-        );
-        
-        // Сохраняем сертификат домена
-        file_put_contents(
-            $certDestDir . '/cert.pem',
-            $domainCert
-        );
-        
-        // Сохраняем полную цепочку
-        file_put_contents(
-            $certDestDir . '/fullchain.pem',
-            $domainCert . "\n" . $issuerChain
-        );
-    } else {
-        // Если разделить не удалось, сохраняем как есть
-        file_put_contents(
-            $certDestDir . '/cert.pem',
-            $certPem
-        );
-        
-        file_put_contents(
-            $certDestDir . '/chain.pem',
-            ''
-        );
-        
-        file_put_contents(
-            $certDestDir . '/fullchain.pem',
-            $certPem
-        );
+    // Получаем промежуточный сертификат Let's Encrypt (R3)
+    $logLines[] = 'Загрузка промежуточного сертификата Let\'s Encrypt...';
+    $chainUrl = $isStaging
+        ? 'https://letsencrypt.org/certs/staging/letsencrypt-stg-int-r3.pem'
+        : 'https://letsencrypt.org/certs/lets-encrypt-r3.pem';
+    $intermediateChain = @file_get_contents($chainUrl);
+    if ($intermediateChain === false) {
+        $logLines[] = 'Ошибка загрузки промежуточного сертификата с ' . $chainUrl;
+        $intermediateChain = '';
     }
+    
+    // Сохраняем цепочку
+    file_put_contents(
+        $certDestDir . '/chain.pem',
+        $intermediateChain
+    );
+    
+    // Сохраняем полную цепочку
+    file_put_contents(
+        $certDestDir . '/fullchain.pem',
+        $certPem . "\n" . $intermediateChain
+    );
+    
+    $logLines[] = 'Сертификат и цепочка успешно сохранены';
     
     // Устанавливаем правильные права
     foreach (glob($certDestDir . '/*.pem') as $certFile) {
