@@ -21,7 +21,7 @@
 
 1. Клонируйте репозиторий:
 ```
-git clone https://github.com/yourusername/php-letsencrypt-generator.git
+git clone https://github.com/tereshin/php-letsencrypt-generator.git
 cd php-letsencrypt-generator
 ```
 
@@ -45,7 +45,6 @@ chmod 700 storage/keys certs
    - **Домены**: Укажите один или несколько доменов через запятую (например, `example.com, www.example.com`)
    - **Email**: Укажите ваш email для регистрации в Let's Encrypt
    - **Путь к корню сайта**: Укажите полный путь к корню веб-сервера, где будут размещены файлы проверки
-   - **Использовать тестовый сервер**: Отметьте для использования тестового сервера Let's Encrypt (рекомендуется для тестирования)
 
 3. Нажмите "Выпустить сертификат"
 4. Дождитесь завершения процесса
